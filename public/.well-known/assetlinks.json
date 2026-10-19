@@ -1,0 +1,10 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+        "target": {
+            "namespace": "android_app",
+                "package_name": "app.vercel.partago_psi.twa",
+                    "sha256_cert_fingerprints": ["2E:E8:21:11:DF:21:86:88:DF:5F:EC:A8:C9:7D:7B:6C:29:BE:CE:DE:59:68:59:C5:CA:A8:3C:36:43:FB:C2:60"]
+                      }
+                      }]
+                      
+}]
