@@ -1,16 +1,32 @@
 import React, { useState } from 'react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('welcome'); // 'welcome', 'calculator', 'about'
+  const [activeTab, setActiveTab] = useState('welcome'); // 'welcome', 'group-dashboard', 'calculator', 'about'
   const [groupCodeInput, setGroupCodeInput] = useState('');
-  const [currentGroup, setCurrentGroup] = useState(null);
-
+  
   // ÉTATS CALCULATEUR SIMPLE
   const [totalAmount, setTotalAmount] = useState('');
   const [peopleCount, setPeopleCount] = useState('2');
   const [tipPercentage, setTipPercentage] = useState('0');
 
-  // Calculs
+  // ÉTATS DU GROUPE ACTIF
+  const [groupCode, setGroupCode] = useState('');
+  const [currency, setCurrency] = useState('€');
+  const [members, setMembers] = useState(['Alex', 'Sam', 'Julie']);
+  const [newMember, setNewMember] = useState('');
+  
+  const [expenses, setExpenses] = useState([
+    { id: 1, title: 'Restaurant', amount: 45.0, paidBy: 'Alex', category: 'Nourriture' },
+    { id: 2, title: 'Courses', amount: 30.0, paidBy: 'Sam', category: 'Courses' }
+  ]);
+  const [expTitle, setExpTitle] = useState('');
+  const [expAmount, setExpAmount] = useState('');
+  const [expPaidBy, setExpPaidBy] = useState('Alex');
+  const [expCategory, setExpCategory] = useState('Nourriture');
+
+  const categories = ['Nourriture', 'Transport', 'Logement', 'Loisirs', 'Autre'];
+
+  // Calculs Calculatrice Rapide
   const total = parseFloat(totalAmount) || 0;
   const count = parseInt(peopleCount, 10) || 1;
   const tip = parseFloat(tipPercentage) || 0;
@@ -29,21 +45,53 @@ export default function App() {
 
   const handleCreateGroup = () => {
     const newCode = generate19DigitCode();
-    setCurrentGroup({ code: newCode, members: [], expenses: [] });
+    setGroupCode(newCode);
     setActiveTab('group-dashboard');
   };
 
   const handleJoinGroup = () => {
     if (groupCodeInput.trim().length >= 5) {
-      setCurrentGroup({ code: groupCodeInput.trim(), members: [], expenses: [] });
+      setGroupCode(groupCodeInput.trim());
       setActiveTab('group-dashboard');
     }
   };
 
+  // Actions Groupe
+  const handleAddMember = () => {
+    if (newMember.trim() && !members.includes(newMember.trim())) {
+      setMembers([...members, newMember.trim()]);
+      setNewMember('');
+    }
+  };
+
+  const handleRemoveMember = (name) => {
+    setMembers(members.filter((m) => m !== name));
+    setExpenses(expenses.filter((e) => e.paidBy !== name));
+  };
+
+  const handleAddExpense = () => {
+    if (expTitle.trim() && expAmount) {
+      const newExp = {
+        id: Date.now(),
+        title: expTitle.trim(),
+        amount: parseFloat(expAmount),
+        paidBy: expPaidBy || members[0],
+        category: expCategory
+      };
+      setExpenses([...expenses, newExp]);
+      setExpTitle('');
+      setExpAmount('');
+    }
+  };
+
+  // Calculs du Groupe
+  const groupTotal = expenses.reduce((sum, item) => sum + item.amount, 0);
+  const groupPerPerson = members.length > 0 ? (groupTotal / members.length).toFixed(2) : '0.00';
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col justify-between p-4 font-sans">
       
-      {/* En-tête / Barre de Navigation */}
+      {/* En-tête / Navigation */}
       <header className="max-w-md w-full mx-auto bg-white rounded-3xl p-4 shadow-sm mb-4 border border-slate-100 flex justify-between items-center">
         <div 
           className="flex items-center space-x-2 cursor-pointer" 
@@ -57,7 +105,7 @@ export default function App() {
 
         <nav className="flex space-x-1 bg-slate-100 p-1 rounded-2xl">
           <button
-            onClick={() => setActiveTab('welcome')}
+            onClick={() => setActiveTab(groupCode ? 'group-dashboard' : 'welcome')}
             className={`px-3 py-1.5 text-xs font-bold rounded-xl transition ${
               activeTab === 'welcome' || activeTab === 'group-dashboard'
                 ? 'bg-white text-emerald-600 shadow-sm'
@@ -92,16 +140,13 @@ export default function App() {
       {/* Contenu principal */}
       <main className="max-w-md w-full mx-auto bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex-1 flex flex-col justify-between">
         
-        {/* === ÉCRAN D'ACCUEIL D'ORIGINE === */}
+        {/* === 1. ACCUEIL REJOINDRE / CRÉER === */}
         {activeTab === 'welcome' && (
           <div className="flex flex-col items-center text-center my-auto space-y-6 py-4">
-            
-            {/* Logo Vert P */}
             <div className="w-20 h-20 rounded-3xl bg-emerald-100 text-emerald-600 font-black flex items-center justify-center text-4xl shadow-inner">
               P
             </div>
 
-            {/* Titre & Sous-titre */}
             <div className="space-y-2">
               <h2 className="text-2xl font-black text-slate-800 tracking-tight">
                 Bienvenue sur Partago
@@ -111,7 +156,6 @@ export default function App() {
               </p>
             </div>
 
-            {/* Bouton Créer un groupe */}
             <div className="w-full space-y-4 pt-2">
               <button
                 onClick={handleCreateGroup}
@@ -121,7 +165,6 @@ export default function App() {
                 <span>Créer un nouveau groupe</span>
               </button>
 
-              {/* Séparateur */}
               <div className="relative flex py-2 items-center">
                 <div className="flex-grow border-t border-slate-200"></div>
                 <span className="flex-shrink mx-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -130,7 +173,6 @@ export default function App() {
                 <div className="flex-grow border-t border-slate-200"></div>
               </div>
 
-              {/* Formulaire Rejoindre */}
               <div className="space-y-3">
                 <input
                   type="text"
@@ -152,32 +194,185 @@ export default function App() {
           </div>
         )}
 
-        {/* === ÉCRAN D'UN GROUPE ACTIF === */}
-        {activeTab === 'group-dashboard' && currentGroup && (
+        {/* === 2. ESPACE GROUPE COMPLET === */}
+        {activeTab === 'group-dashboard' && (
           <div className="space-y-6">
-            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-center">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">
-                Code de votre groupe
+            {/* Code de groupe */}
+            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3 text-center">
+              <span className="text-[10px] uppercase font-bold text-emerald-600 tracking-wider">
+                CODE DE VOTRE GROUPE
               </span>
-              <p className="text-sm font-mono font-bold text-slate-800 mt-1 select-all">
-                {currentGroup.code}
+              <p className="text-sm font-mono font-bold text-slate-800 mt-0.5 select-all">
+                {groupCode || '3251-2488-8672-7640-646'}
               </p>
             </div>
 
-            <div className="text-center py-6 text-slate-400 text-xs">
-              Votre groupe est créé ! Vous pouvez maintenant inviter des membres et partager les dépenses.
+            {/* Devise */}
+            <div className="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-200">
+              <span className="text-xs font-bold text-slate-600">Devise du groupe</span>
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-1 text-xs font-bold text-emerald-600 focus:outline-none"
+              >
+                <option value="€">EUR (€)</option>
+                <option value="$">USD ($)</option>
+                <option value="£">GBP (£)</option>
+                <option value="CHF">CHF</option>
+              </select>
+            </div>
+
+            {/* Membres */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-600">
+                Membres du groupe ({members.length})
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Ajouter un prénom..."
+                  value={newMember}
+                  onChange={(e) => setNewMember(e.target.value)}
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none"
+                />
+                <button
+                  onClick={handleAddMember}
+                  className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700 transition"
+                >
+                  Ajouter
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-2">
+                {members.map((m) => (
+                  <span
+                    key={m}
+                    className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full"
+                  >
+                    {m}
+                    <button
+                      onClick={() => handleRemoveMember(m)}
+                      className="text-emerald-500 hover:text-red-500 ml-1 font-bold"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Formulaire dépense */}
+            <div className="border-t border-slate-100 pt-4 space-y-3">
+              <label className="block text-xs font-bold text-slate-600">
+                Ajouter une dépense
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  placeholder="Intitulé"
+                  value={expTitle}
+                  onChange={(e) => setExpTitle(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none"
+                />
+                <input
+                  type="number"
+                  placeholder={`Montant (${currency})`}
+                  value={expAmount}
+                  onChange={(e) => setExpAmount(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  value={expPaidBy}
+                  onChange={(e) => setExpPaidBy(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none"
+                >
+                  {members.map((m) => (
+                    <option key={m} value={m}>
+                      Payé par {m}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={expCategory}
+                  onChange={(e) => setExpCategory(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                onClick={handleAddExpense}
+                className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs transition"
+              >
+                + Ajouter la dépense
+              </button>
+            </div>
+
+            {/* Dépenses & Récap */}
+            <div className="border-t border-slate-100 pt-4 space-y-3">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xs font-bold text-slate-700">Dépenses enregistrées</h3>
+                <span className="text-xs font-bold text-emerald-600">
+                  Total : {groupTotal.toFixed(2)} {currency}
+                </span>
+              </div>
+
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                {expenses.length === 0 ? (
+                  <p className="text-[11px] text-slate-400 text-center py-2">
+                    Aucune dépense pour le moment.
+                  </p>
+                ) : (
+                  expenses.map((exp) => (
+                    <div
+                      key={exp.id}
+                      className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs"
+                    >
+                      <div>
+                        <span className="font-bold text-slate-800">{exp.title}</span>
+                        <div className="flex gap-2 items-center text-[10px] text-slate-500 mt-0.5">
+                          <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-medium">
+                            {exp.category}
+                          </span>
+                          <span>Par : {exp.paidBy}</span>
+                        </div>
+                      </div>
+                      <span className="font-extrabold text-slate-800">
+                        {exp.amount.toFixed(2)} {currency}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-center mt-2">
+                <span className="text-[11px] uppercase font-bold text-emerald-600">
+                  Moyenne par membre ({members.length})
+                </span>
+                <div className="text-2xl font-black text-emerald-700 mt-0.5">
+                  {groupPerPerson} {currency}
+                </div>
+              </div>
             </div>
 
             <button
               onClick={() => setActiveTab('welcome')}
-              className="w-full border border-slate-200 text-slate-600 font-bold py-3 rounded-2xl text-xs hover:bg-slate-50 transition"
+              className="w-full border border-slate-200 text-slate-500 font-bold py-2.5 rounded-2xl text-xs hover:bg-slate-50 transition"
             >
-              ← Retour à l'accueil
+              ← Quitter le groupe
             </button>
           </div>
         )}
 
-        {/* === ONGLET CALCULATEUR === */}
+        {/* === 3. CALCULATEUR RAPIDE === */}
         {activeTab === 'calculator' && (
           <div className="space-y-5">
             <div>
@@ -238,7 +433,7 @@ export default function App() {
           </div>
         )}
 
-        {/* === ONGLET SOUTENIR / À PROPOS === */}
+        {/* === 4. SOUTENIR / À PROPOS === */}
         {activeTab === 'about' && (
           <div className="space-y-6 text-center my-auto">
             <div className="space-y-2">
