@@ -1,92 +1,81 @@
 import React, { useState } from 'react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('calculator'); // 'calculator', 'group' ou 'about'
-  
-  // États Calculateur Rapide
+  const [activeTab, setActiveTab] = useState('calculator'); // 'calculator', 'group', 'about'
+
+  // --- ÉTATS CALCULATEUR SIMPLE ---
   const [totalAmount, setTotalAmount] = useState('');
   const [peopleCount, setPeopleCount] = useState('2');
   const [tipPercentage, setTipPercentage] = useState('0');
 
-  // États Gestion de Groupe & Dépenses
-  const [groupName, setGroupName] = useState('Sortie entre amis');
-  const [members, setMembers] = useState(['Alice', 'Bob', 'Charlie']);
-  const [newMemberName, setNewMemberName] = useState('');
-  const [expenses, setExpenses] = useState([]);
-  
-  // Formulaire nouvelle dépense
-  const [expenseTitle, setExpenseTitle] = useState('');
-  const [expenseAmount, setExpenseAmount] = useState('');
-  const [paidBy, setPaidBy] = useState('');
-
-  // Calculs Calculatrice Rapide
+  // Calculs simples
   const total = parseFloat(totalAmount) || 0;
   const count = parseInt(peopleCount, 10) || 1;
   const tip = parseFloat(tipPercentage) || 0;
   const totalWithTip = total + (total * (tip / 100));
   const amountPerPerson = (totalWithTip / count).toFixed(2);
 
+  // --- ÉTATS GESTION DE GROUPE & DÉPENSES ---
+  const [groupCode, setGroupCode] = useState('4829-1058-3920-5819-012'); // Code à 19 chiffres
+  const [currency, setCurrency] = useState('€');
+  const [members, setMembers] = useState(['Alex', 'Sam', 'Julie']);
+  const [newMember, setNewMember] = useState('');
+  
+  const [expenses, setExpenses] = useState([
+    { id: 1, title: 'Restaurant', amount: 45.0, paidBy: 'Alex', category: 'Nourriture' },
+    { id: 2, title: 'Courses', amount: 30.0, paidBy: 'Sam', category: 'Courses' }
+  ]);
+  const [expTitle, setExpTitle] = useState('');
+  const [expAmount, setExpAmount] = useState('');
+  const [expPaidBy, setExpPaidBy] = useState('Alex');
+  const [expCategory, setExpCategory] = useState('Nourriture');
+
+  const categories = ['Nourriture', 'Transport', 'Logement', 'Loisirs', 'Autre'];
+
   // Actions Groupe
-  const handleAddMember = (e) => {
-    e.preventDefault();
-    if (newMemberName.trim() && !members.includes(newMemberName.trim())) {
-      setMembers([...members, newMemberName.trim()]);
-      setNewMemberName('');
+  const handleAddMember = () => {
+    if (newMember.trim() && !members.includes(newMember.trim())) {
+      setMembers([...members, newMember.trim()]);
+      setNewMember('');
     }
   };
 
   const handleRemoveMember = (name) => {
     setMembers(members.filter((m) => m !== name));
-    setExpenses(expenses.filter((exp) => exp.paidBy !== name));
+    setExpenses(expenses.filter((e) => e.paidBy !== name));
   };
 
-  const handleAddExpense = (e) => {
-    e.preventDefault();
-    if (!expenseTitle.trim() || !expenseAmount || !paidBy) return;
-
-    const newExp = {
-      id: Date.now(),
-      title: expenseTitle.trim(),
-      amount: parseFloat(expenseAmount),
-      paidBy: paidBy
-    };
-
-    setExpenses([...expenses, newExp]);
-    setExpenseTitle('');
-    setExpenseAmount('');
+  const handleAddExpense = () => {
+    if (expTitle.trim() && expAmount) {
+      const newExp = {
+        id: Date.now(),
+        title: expTitle.trim(),
+        amount: parseFloat(expAmount),
+        paidBy: expPaidBy || members[0],
+        category: expCategory
+      };
+      setExpenses([...expenses, newExp]);
+      setExpTitle('');
+      setExpAmount('');
+    }
   };
 
-  const handleRemoveExpense = (id) => {
-    setExpenses(expenses.filter((exp) => exp.id !== id));
-  };
-
-  // Calculs Bilan de Groupe
-  const groupTotal = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const costPerMember = members.length > 0 ? groupTotal / members.length : 0;
-
-  const memberBalances = members.map((member) => {
-    const paid = expenses
-      .filter((exp) => exp.paidBy === member)
-      .reduce((sum, exp) => sum + exp.amount, 0);
-    return {
-      name: member,
-      paid: paid,
-      balance: paid - costPerMember
-    };
-  });
+  // Calculs du Groupe
+  const groupTotal = expenses.reduce((sum, item) => sum + item.amount, 0);
+  const groupPerPerson = members.length > 0 ? (groupTotal / members.length).toFixed(2) : '0.00';
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 flex flex-col justify-between p-4 font-sans">
-      {/* En-tête de l'application */}
+      {/* En-tête */}
       <header className="max-w-md w-full mx-auto bg-white rounded-3xl p-6 shadow-sm mb-4 border border-slate-200 text-center">
         <h1 className="text-2xl font-black text-indigo-600 tracking-tight">Partago</h1>
-        <p className="text-xs text-slate-500 mt-1">Partagez vos additions & dépenses en groupe</p>
+        <p className="text-xs text-slate-500 mt-1">Gestion de dépenses collaborative</p>
 
-        {/* Barre d'onglets */}
+        {/* Barre de navigation par onglets */}
         <div className="flex bg-slate-100 p-1 rounded-2xl mt-4">
           <button
             onClick={() => setActiveTab('calculator')}
-            className={`flex-1 py-2 text-[11px] font-bold rounded-xl transition ${
+            className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
               activeTab === 'calculator'
                 ? 'bg-white text-indigo-600 shadow-sm'
                 : 'text-slate-500 hover:text-slate-700'
@@ -96,17 +85,17 @@ export default function App() {
           </button>
           <button
             onClick={() => setActiveTab('group')}
-            className={`flex-1 py-2 text-[11px] font-bold rounded-xl transition ${
+            className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
               activeTab === 'group'
                 ? 'bg-white text-indigo-600 shadow-sm'
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
-            Groupe ({members.length})
+            Groupe
           </button>
           <button
             onClick={() => setActiveTab('about')}
-            className={`flex-1 py-2 text-[11px] font-bold rounded-xl transition ${
+            className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
               activeTab === 'about'
                 ? 'bg-white text-indigo-600 shadow-sm'
                 : 'text-slate-500 hover:text-slate-700'
@@ -119,12 +108,13 @@ export default function App() {
 
       {/* Contenu principal */}
       <main className="max-w-md w-full mx-auto bg-white rounded-3xl p-6 shadow-sm border border-slate-200 flex-1 flex flex-col justify-between">
-        {/* ONGLET 1 : CALCULATEUR RAPIDE */}
+        
+        {/* === ONGLET 1 : CALCULATEUR RAPIDE === */}
         {activeTab === 'calculator' && (
           <div className="space-y-5">
             <div>
               <label className="block text-xs font-bold text-slate-600 mb-1">
-                Montant total de l'addition (€)
+                Montant total de l'addition ({currency})
               </label>
               <input
                 type="number"
@@ -174,52 +164,70 @@ export default function App() {
                 Montant par personne
               </span>
               <div className="text-4xl font-black text-indigo-600 mt-1">
-                {amountPerPerson} €
+                {amountPerPerson} {currency}
               </div>
             </div>
           </div>
         )}
 
-        {/* ONGLET 2 : GESTION DE GROUPE */}
+        {/* === ONGLET 2 : GESTION DE GROUPE COLLABORATIF === */}
         {activeTab === 'group' && (
           <div className="space-y-6">
-            {/* Nom du groupe */}
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nom du groupe</label>
-              <input
-                type="text"
-                value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-700"
-              />
+            {/* Code de synchronisation */}
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 text-center">
+              <span className="text-[10px] uppercase font-bold text-slate-400">
+                Code de synchronisation (19 chiffres)
+              </span>
+              <p className="text-xs font-mono font-bold text-indigo-600 mt-0.5 tracking-wider">
+                {groupCode}
+              </p>
             </div>
 
-            {/* Membres */}
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Participants</label>
-              <form onSubmit={handleAddMember} className="flex gap-2 mb-3">
+            {/* Gestion de la Devise */}
+            <div className="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-200">
+              <span className="text-xs font-bold text-slate-600">Devise du groupe</span>
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-1 text-xs font-bold text-indigo-600 focus:outline-none"
+              >
+                <option value="€">EUR (€)</option>
+                <option value="$">USD ($)</option>
+                <option value="£">GBP (£)</option>
+                <option value="CHF">CHF</option>
+              </select>
+            </div>
+
+            {/* Liste des membres */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-600">
+                Membres du groupe ({members.length})
+              </label>
+              <div className="flex gap-2">
                 <input
                   type="text"
                   placeholder="Ajouter un prénom..."
-                  value={newMemberName}
-                  onChange={(e) => setNewMemberName(e.target.value)}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                  value={newMember}
+                  onChange={(e) => setNewMember(e.target.value)}
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none"
                 />
-                <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold">
-                  + Ajouter
+                <button
+                  onClick={handleAddMember}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition"
+                >
+                  Ajouter
                 </button>
-              </form>
-
-              <div className="flex flex-wrap gap-2">
-                {members.map((member) => (
+              </div>
+              <div className="flex flex-wrap gap-2 pt-2">
+                {members.map((m) => (
                   <span
-                    key={member}
-                    className="inline-flex items-center bg-indigo-50 text-indigo-700 text-xs font-semibold px-3 py-1.5 rounded-xl border border-indigo-100"
+                    key={m}
+                    className="inline-flex items-center gap-1 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold px-3 py-1 rounded-full"
                   >
-                    {member}
+                    {m}
                     <button
-                      onClick={() => handleRemoveMember(member)}
-                      className="ml-2 text-indigo-400 hover:text-red-500 font-bold text-sm"
+                      onClick={() => handleRemoveMember(m)}
+                      className="text-indigo-400 hover:text-red-500 ml-1 font-bold"
                     >
                       ×
                     </button>
@@ -228,71 +236,112 @@ export default function App() {
               </div>
             </div>
 
-            {/* Formulaire de Dépense */}
-            <div className="border-t border-slate-100 pt-4">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Ajouter une dépense</label>
-              <form onSubmit={handleAddExpense} className="space-y-2">
+            {/* Formulaire de dépense */}
+            <div className="border-t border-slate-100 pt-4 space-y-3">
+              <label className="block text-xs font-bold text-slate-600">
+                Ajouter une dépense
+              </label>
+              <div className="grid grid-cols-2 gap-2">
                 <input
                   type="text"
-                  placeholder="Titre (ex: Restaurant, Taxi...)"
-                  value={expenseTitle}
-                  onChange={(e) => setExpenseTitle(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                  placeholder="Intitulé"
+                  value={expTitle}
+                  onChange={(e) => setExpTitle(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none"
                 />
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    placeholder="Montant (€)"
-                    value={expenseAmount}
-                    onChange={(e) => setExpenseAmount(e.target.value)}
-                    className="w-1/2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
-                  />
-                  <select
-                    value={paidBy}
-                    onChange={(e) => setPaidBy(e.target.value)}
-                    className="w-1/2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600"
-                  >
-                    <option value="">Payé par...</option>
-                    {members.map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  type="submit"
-                  disabled={!members.length}
-                  className="w-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-2.5 rounded-xl transition"
-                >
-                  Enregistrer la dépense
-                </button>
-              </form>
-            </div>
-
-            {/* Bilan du groupe */}
-            <div className="border-t border-slate-100 pt-4 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-500 uppercase">Total Dépensé</span>
-                <span className="text-base font-black text-slate-800">{groupTotal.toFixed(2)} €</span>
+                <input
+                  type="number"
+                  placeholder={`Montant (${currency})`}
+                  value={expAmount}
+                  onChange={(e) => setExpAmount(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none"
+                />
               </div>
 
-              {members.length > 0 && (
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 space-y-2">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase">Équilibre des comptes</span>
-                  {memberBalances.map((b) => (
-                    <div key={b.name} className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-slate-700">{b.name}</span>
-                      <span className={`font-bold ${b.balance >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
-                        {b.balance >= 0 ? `+${b.balance.toFixed(2)} €` : `${b.balance.toFixed(2)} €`}
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  value={expPaidBy}
+                  onChange={(e) => setExpPaidBy(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none"
+                >
+                  {members.map((m) => (
+                    <option key={m} value={m}>
+                      Payé par {m}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={expCategory}
+                  onChange={(e) => setExpCategory(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                onClick={handleAddExpense}
+                className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs transition"
+              >
+                + Ajouter la dépense
+              </button>
+            </div>
+
+            {/* Liste des dépenses & Récapitulatif */}
+            <div className="border-t border-slate-100 pt-4 space-y-3">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xs font-bold text-slate-700">Dépenses enregistrées</h3>
+                <span className="text-xs font-bold text-indigo-600">
+                  Total : {groupTotal.toFixed(2)} {currency}
+                </span>
+              </div>
+
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                {expenses.length === 0 ? (
+                  <p className="text-[11px] text-slate-400 text-center py-2">
+                    Aucune dépense pour le moment.
+                  </p>
+                ) : (
+                  expenses.map((exp) => (
+                    <div
+                      key={exp.id}
+                      className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-xs"
+                    >
+                      <div>
+                        <span className="font-bold text-slate-800">{exp.title}</span>
+                        <div className="flex gap-2 items-center text-[10px] text-slate-500 mt-0.5">
+                          <span className="bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 font-medium">
+                            {exp.category}
+                          </span>
+                          <span>Par : {exp.paidBy}</span>
+                        </div>
+                      </div>
+                      <span className="font-extrabold text-slate-800">
+                        {exp.amount.toFixed(2)} {currency}
                       </span>
                     </div>
-                  ))}
+                  ))
+                )}
+              </div>
+
+              <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-center mt-2">
+                <span className="text-[11px] uppercase font-bold text-indigo-400">
+                  Moyenne par membre ({members.length})
+                </span>
+                <div className="text-2xl font-black text-indigo-600 mt-0.5">
+                  {groupPerPerson} {currency}
                 </div>
-              )}
+              </div>
             </div>
           </div>
         )}
 
-        {/* ONGLET 3 : SOUTENIR / À PROPOS */}
+        {/* === ONGLET 3 : SOUTENIR / À PROPOS === */}
         {activeTab === 'about' && (
           <div className="space-y-6 text-center">
             <div className="space-y-2">
@@ -311,7 +360,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* BOUTON STRIPE SÉCURISÉ */}
               <a
                 href={"https://buy.stripe.com/" + "6oUdR8eKi8en2DgbYDcs800"}
                 target="_blank"
